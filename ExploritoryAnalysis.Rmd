@@ -1,0 +1,115 @@
+---
+title: "Data Exploration"
+author: "Christina De Cesaris"
+date: "3/8/2021"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+library(AER)
+library(ggplot2)
+library(plotly)
+library(lmerTest)
+library(MASS)
+```
+
+```{r}
+data(Guns)
+
+dim(Guns)
+summary(Guns)
+str(Guns)
+
+
+which(is.na(Guns)) #data clean
+
+head(Guns)
+```
+
+
+
+
+
+
+
+```{r warning=FALSE}
+av_st = Guns %>%
+  group_by(state) %>% # average all state
+  summarise_all(mean)
+av_st
+
+av_styr = Guns %>%   # average each year each state
+  group_by(year,state) %>%
+  summarise_all(mean)
+
+
+av_yr = Guns %>% # average all states each years
+  group_by(year)%>%
+  summarise_all(mean)
+av_yr
+
+
+
+
+```
+
+```{r}
+
+
+
+
+
+
+v=Guns %>%
+  ggplot( aes(x=year, y=violent, group=state, color=state)) +
+    geom_line() 
+ggplotly(v)
+
+v=Guns %>%
+  ggplot( aes(x=year, y=robbery, group=state, color=state)) +
+    geom_line() 
+ggplotly(v)
+
+v=Guns %>%
+  ggplot( aes(x=year, y=(murder), group=year, col=year)) +
+    geom_boxplot()+
+    labs(title="",xlab="",ylab('f'))
+ggplotly(v)
+
+
+```
+
+```{r}
+v=Guns %>%
+  filter() %>%
+  ggplot( aes(x=year, y=population, group=state, color=state)) +
+    geom_line() 
+ggplotly(v)
+
+
+
+```
+
+
+```{r}
+
+
+
+fig <- plot_ly(av_yr, x= ~year)
+fig <- fig %>% add_lines(y= ~(violent), name = "Violent Crime", type = 'scatter', mode = 'lines+markers')
+fig <- fig %>% add_lines(y= ~(robbery), name = "Robberies", visible = T)
+fig <- fig %>% add_lines(y= ~(murder), name = "Murder", visible = T)
+
+fig <- fig %>% layout(title = "Average Crime Rates in USA",  
+                      yaxis = list(title = "Average per 100k People",
+                                   margin = margin))
+
+fig
+```
+
+
+
+
+

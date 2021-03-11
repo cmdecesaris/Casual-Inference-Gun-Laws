@@ -1,0 +1,105 @@
+---
+title: "LinearMixedModelPropensity"
+author: "Christina De Cesaris"
+date: "3/10/2021"
+output: html_document
+---
+
+```{r}
+library(lmerTest)
+library(MASS)
+library(AER)
+data(Guns)
+```
+
+```{r}
+#distribution of response
+hist(Guns$violent) #TODO, ADD AXIS
+
+```
+
+
+
+```{r}
+#quick inverse weight propensity scores for law
+sapply(Guns, class)
+
+cor(Filter(is.numeric,Guns))
+
+pairs(Filter(is.numeric,Guns)) #correlations
+
+
+boxplot(Guns$violent~Guns$law) #TODO, add axis, legend, titles etc
+```
+
+```{r}
+#before weights
+mod2.2 = lmer((violent)~law+male+robbery+prisoners+afam+cauc+(1|state)+(1|year), data=Guns) 
+
+
+#wip balance analysis
+bal1= lm(violent~law, Guns)
+summary(bal1)
+
+
+bal1= lm(prisoners~law, Guns)
+summary(bal1)
+
+bal1= lm(afam~law, Guns)
+summary(bal1)
+
+bal1= lm(cauc~law, Guns)
+summary(bal1)
+
+
+bal1= lm(robbery~law, Guns)
+summary(bal1)
+
+bal1= lm(murder~law, Guns)
+summary(bal1)
+
+bal1= lm(male~law, Guns)
+summary(bal1)
+
+#obtain weights using logistic regression and inverse weighted propensity scores
+mod_log = glm(law~male+robbery+prisoners+afam+cauc,family=binomial, Guns)
+summary(mod_log)
+
+prob= mod_log$fitted
+
+pscore = ifelse(Guns$law=='yes', prob, 1-prob)
+weight=1/pscore
+hist(pscore) #distribution right skewed, not terrible extremes, consider trimming [0.01,0.99]
+summary(pscore)
+
+
+#balancing after weights are applied
+bal1= lm(violent~law, Guns, weights=weight)
+summary(bal1)
+
+
+bal1= lm(prisoners~law, Guns, weights=weight)
+summary(bal1)
+
+bal1= lm(afam~law, Guns, weights=weight)
+summary(bal1)
+
+bal1= lm(cauc~law, Guns, weights=weight)
+summary(bal1)
+
+
+bal1= lm(robbery~law, Guns, weights=weight)
+summary(bal1)
+
+bal1= lm(murder~law, Guns, weights=weight)
+summary(bal1)
+
+bal1= lm(male~law, Guns, weights=weight)
+summary(bal1)
+
+
+
+mod2 = lmer((violent)~law+male+robbery+prisoners+afam+cauc+(1|state)+(1|year), data=Guns, weights=weight)
+summary(mod2.2)
+summary(mod2) #with reduced selection bias it appears the law is not contributing as much effect, that is, confounders played a significant role. 
+```
