@@ -9,6 +9,10 @@ output: html_document
 library(lmerTest)
 library(MASS)
 library(AER)
+library(scales)
+library(redres)
+library(stargazer)
+install.packages("stargazer")
 data(Guns)
 ```
 
@@ -34,26 +38,24 @@ boxplot(Guns$violent~Guns$law) #TODO, add axis, legend, titles etc
 
 ```{r}
 #before weights
-mod2.2 = lmer((violent)~law+male+robbery+prisoners+afam+cauc+(1|state)+(1|year), data=Guns) 
+mod2.2 = lmer((violent)~law+male+robbery+prisoners+male+density+(1|state)+(1|year), data=Guns) 
+```
 
+```{r, results='asis', message = FALSE}
 
 #wip balance analysis
 bal1= lm(violent~law, Guns)
 summary(bal1)
 
 
-bal1= lm(prisoners~law, Guns)
-summary(bal1)
-
-bal1= lm(afam~law, Guns)
-summary(bal1)
-
-bal1= lm(cauc~law, Guns)
-summary(bal1)
+bal2= lm(prisoners~law, Guns)
+summary(bal2)
 
 
-bal1= lm(robbery~law, Guns)
-summary(bal1)
+
+
+bal3= lm(robbery~law, Guns)
+summary(bal3)
 
 bal1= lm(murder~law, Guns)
 summary(bal1)
@@ -61,8 +63,15 @@ summary(bal1)
 bal1= lm(male~law, Guns)
 summary(bal1)
 
+stargazer(bal1, bal2, bal3, title="Results", align=TRUE,type = 'html')
+
+
+```
+
+```{r}
+
 #obtain weights using logistic regression and inverse weighted propensity scores
-mod_log = glm(law~male+robbery+prisoners+afam+cauc,family=binomial, Guns)
+mod_log = glm(law~law+male+robbery+prisoners+male+density,family=binomial, Guns)
 summary(mod_log)
 
 prob= mod_log$fitted
@@ -99,7 +108,14 @@ summary(bal1)
 
 
 
-mod2 = lmer((violent)~law+male+robbery+prisoners+afam+cauc+(1|state)+(1|year), data=Guns, weights=weight)
+mod2 = lmer((violent)~law+male+robbery+prisoners+male+density+(1|state)+(1|year), data=Guns, weights=weight)
 summary(mod2.2)
 summary(mod2) #with reduced selection bias it appears the law is not contributing as much effect, that is, confounders played a significant role. 
+```
+
+
+```{ R Diagnostics}
+plot_redres(mod2, type = "std_cond")
+plot_resqq(mod2)
+plot_ranef(mod2)
 ```
