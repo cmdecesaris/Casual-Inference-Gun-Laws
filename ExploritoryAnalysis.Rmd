@@ -5,7 +5,6 @@ date: "3/8/2021"
 output: html_document
 ---
 
-
 ```{r}
 library(tidyverse)
 library(AER)
@@ -15,7 +14,10 @@ library(lmerTest)
 library(MASS)
 library(grid)
 library(gridExtra)
+library(DT)
 ```
+
+# Expolritiy Analysis
 
 ```{r}
 data(Guns)
@@ -36,85 +38,246 @@ head(Guns)
 
 
 
-```{r warning=FALSE}
+```{r warning=FALSE, include=FALSE}
 av_st = Guns %>%
   group_by(state) %>% # average all state
-  summarise_all(mean)
+  summarise_all(mean) %>%
+  mutate_if(is.numeric,funs(round(.,2)))
 av_st
+#av_st
+
+
+av_st_r = Guns %>%
+  group_by(state) %>% # average all state
+  summarise(mean(violent),median(violent), sd(violent), max(violent), min(violent))%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_st_r
+
+
+av_yr_r = Guns %>%
+  group_by(year) %>% # average all state
+  summarise(mean(violent),median(violent), sd(violent), max(violent), min(violent))%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_yr_r
 
 av_styr = Guns %>%   # average each year each state
   group_by(year,state) %>%
-  summarise_all(mean)
-
+  summarise_all(mean)%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_styr
 
 av_yr = Guns %>% # average all states each years
   group_by(year)%>%
-  summarise_all(mean)
-av_yr
+  summarise_all(mean)%>%
+  mutate_if(is.numeric,funs(round(.,2)))
 
-
-
-
+#delete null cols
+av_yr=dplyr::select(av_yr,-c(6,7,12,13))
+av_st=dplyr::select(av_st,-c(2,7,8,13))
 ```
 
-```{r}
 
 
 
+```{r Yearly Trends All States}
 
 
 
 v=Guns %>%
-  ggplot( aes(x=year, y=violent, group=state, color=state)) +
-    geom_line() 
+  ggplot( 
+    aes(x=year,
+        y=violent,
+        group=state,
+        color=state)) +
+    geom_line() +
+    labs(
+      title="Yearly Trends in Violent Crime by State",
+      x="School ID",
+      y = "Violent Crime Rate per 100K Poeple") +
+    theme(
+      text = element_text(
+        size=8,
+        face = 'bold'),
+        axis.text.x = element_text(angle=75,hjust=1),
+        axis.ticks.x = element_line(size=0.5)) +
+     scale_x_discrete(
+       guide = guide_axis(n.dodge =1),
+                     expand=c(0, 0)) +
+    scale_fill_discrete(name = "State")
+
+
 ggplotly(v)
 
-v=Guns %>%
-  ggplot( aes(x=year, y=robbery, group=state, color=state)) +
-    geom_line() 
-ggplotly(v)
+r = Guns %>%
+  
+  ggplot( 
+    aes(x=year,
+        y=robbery,
+        group=state,
+        color=state)) +
+    geom_line() +
+    labs(
+      title="Yearly Trends in Robbery Crime by State",
+      x="School ID",
+      y = "Robbery Crime Rate per 100K People") +
+    theme(
+      text = element_text(
+        size=8,
+        face = 'bold'),
+        axis.text.x = element_text(angle=75,hjust=1),
+        axis.ticks.x = element_line(size=0.5)) +
+     scale_x_discrete(
+       guide = guide_axis(n.dodge =1),
+                     expand=c(0, 0)) +
+     scale_fill_discrete(name = "State")
 
-v=Guns %>%
-  ggplot( aes(x=year, y=(murder), group=year, col=year)) +
+
+ggplotly(r)
+
+
+m = Guns %>%
+  
+  ggplot(
+    aes(x=year,
+        y=(violent),
+        group=year,
+        col=year)) +
     geom_boxplot()+
-    labs(title="",xlab="",ylab('f'))
+  labs(
+      title="USA Violent Crime by Year",
+      x="Year",
+      y = "Violent Crime Rate per 100K People") +
+    theme(
+      text = element_text(
+        size=8,
+        face = 'bold'),
+        axis.text.x = element_text(angle=75,hjust=1),
+        axis.ticks.x = element_line(size=0.5)) +
+     scale_x_discrete(
+       guide = guide_axis(n.dodge =1),
+                     expand=c(0, 0)) +
+    scale_fill_discrete(name = "year")
+
+
+ggplotly(m) # DC is a gross outlier, consider removal 
+
+
+```
+
+
+
+
+```{r Interactive Datatables, include=FALSE}
+
+names_yr=c("Year","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
+
+dt_av_yr=datatable(av_yr,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Overall Averages By State')),
+    colnames = c(
+      names_yr))
+
+
+
+names_st=c("State","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
+dt_av_st=datatable(av_st,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Overall Averages By State')),
+    colnames = c(
+      names_st))
+
+
+
+#RESPONSE
+
+
+names_av_st_r=c("State","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
+
+dt_av_st_r=datatable(av_st_r,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Overall Averages By State')),
+    colnames = c(
+      names_av_st_r))
+
+
+
+names_av_yr_r=c("Year","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
+
+dt_av_yr_r=datatable(av_yr_r,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Overall Averages By State')),
+    colnames = c(
+      names_av_yr_r))
+
+
+```
+
+
+```{r}
+v = Guns %>%
+  
+  filter() %>% 
+  
+  ggplot(
+    aes(x=year,
+        y=population,
+        group=state,
+        color=state)) +
+  
+      geom_line() 
+
 ggplotly(v)
 
 
-```
-
-```{r}
-v=Guns %>%
-  filter() %>%
-  ggplot( aes(x=year, y=population, group=state, color=state)) +
-    geom_line() 
-ggplotly(v)
-
-
 
 ```
 
 
-```{r}
+```{r Average Crime USA, include=FALSE}
 
 
 
-fig <- plot_ly(av_yr, x= ~year)
-fig <- fig %>% add_lines(y= ~(violent), name = "Violent Crime", type = 'scatter', mode = 'lines+markers')
-fig <- fig %>% add_lines(y= ~(robbery), name = "Robberies", visible = T)
-fig <- fig %>% add_lines(y= ~(murder), name = "Murder", visible = T)
+crime_fig <- plot_ly(av_yr, x= ~year) %>%
+  add_lines(
+    y= ~(violent),
+    name = "Violent Crime",
+    type = 'scatter',
+    mode = 'lines+markers') %>%
+  
+  add_lines(
+    y= ~(robbery),
+    name = "Robberies",
+    visible = T) %>%
+  
+  add_lines(
+    y= ~(murder),
+    name = "Murder",
+    visible = T) %>%
+  
+    layout(
+      title = "Average Crime Rates in USA",  
+      xaxis = list(title = "Year",
+                   tickangle = 75),
+      yaxis = list(title = "Average per 100k People",
+                   margin = margin)) 
 
-fig <- fig %>% layout(title = "Average Crime Rates in USA",  
-                      yaxis = list(title = "Average per 100k People",
-                                   margin = margin))
 
-fig
+
+
+
 ```
 
 
 
-```{r}
-plot(Guns$violent,Guns$Male)
-```
 
+```{r ref.label=knitr::all_labels(), echo = T, eval = F}
+```
 
