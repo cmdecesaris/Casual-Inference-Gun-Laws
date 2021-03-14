@@ -1,0 +1,302 @@
+---
+title: "Report"
+author: "Christina De Cesaris"
+date: "3/13/2021"
+output: html_document
+---
+
+
+# Introduciton and Background
+
+
+## Methodology
+
+
+# Exploratory Analysis 
+
+```{r Libraries, echo=FALSE, warning=FALSE}
+
+# plotting 
+library(redres)
+library(ggplot2)
+library(plotly)
+
+
+# analysis
+library(MASS)
+library(tidyverse)
+library(lmerTest)
+library(scales)
+
+
+# formatting
+library(grid)
+library(gridExtra)
+library(stargazer)
+
+# data
+library(AER)
+library(DT)
+data(Guns)
+```
+
+```{r Summary Dataframes, warning=FALSE, include=FALSE}
+
+
+av_st = Guns %>%
+  group_by(state) %>% # average all state
+  summarise_all(mean) %>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_st
+#av_st
+
+
+av_st_r = Guns %>%
+  group_by(state) %>% # average all state
+  summarise(mean(violent),median(violent), sd(violent), max(violent), min(violent))%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_st_r
+
+
+av_yr_r = Guns %>%
+  group_by(year) %>% # average all state
+  summarise(mean(violent),median(violent), sd(violent), max(violent), min(violent))%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_yr_r
+
+av_styr = Guns %>%   # average each year each state
+  group_by(year,state) %>%
+  summarise_all(mean)%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_styr
+
+av_yr = Guns %>% # average all states each years
+  group_by(year)%>%
+  summarise_all(mean)%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+
+#delete null cols
+av_yr=dplyr::select(av_yr,-c(6,7,12,13))
+av_st=dplyr::select(av_st,-c(2,7,8,13))
+```
+
+
+```{r Yearly Trends All States Plots}
+
+
+
+v=Guns %>%
+  ggplot( 
+    aes(x=year,
+        y=violent,
+        group=state,
+        color=state)) +
+    geom_line() +
+    labs(
+      title="Yearly Trends in Violent Crime by State",
+      x="School ID",
+      y = "Violent Crime Rate per 100K Poeple") +
+    theme(
+      text = element_text(
+        size=8,
+        face = 'bold'),
+        axis.text.x = element_text(angle=75,hjust=1),
+        axis.ticks.x = element_line(size=0.5)) +
+     scale_x_discrete(
+       guide = guide_axis(n.dodge =1),
+                     expand=c(0, 0)) +
+    scale_fill_discrete(name = "State")
+
+
+#ggplotly(v)
+
+r = Guns %>%
+  
+  ggplot( 
+    aes(x=year,
+        y=robbery,
+        group=state,
+        color=state)) +
+    geom_line() +
+    labs(
+      title="Yearly Trends in Robbery Crime by State",
+      x="School ID",
+      y = "Robbery Crime Rate per 100K People") +
+    theme(
+      text = element_text(
+        size=8,
+        face = 'bold'),
+        axis.text.x = element_text(angle=75,hjust=1),
+        axis.ticks.x = element_line(size=0.5)) +
+     scale_x_discrete(
+       guide = guide_axis(n.dodge =1),
+                     expand=c(0, 0)) +
+     scale_fill_discrete(name = "State")
+
+
+#ggplotly(r)
+
+
+m = Guns %>%
+  
+  ggplot(
+    aes(x=year,
+        y=(violent),
+        group=year,
+        col=year)) +
+    geom_boxplot()+
+  labs(
+      title="USA Violent Crime by Year",
+      x="Year",
+      y = "Violent Crime Rate per 100K People") +
+    theme(
+      text = element_text(
+        size=8,
+        face = 'bold'),
+        axis.text.x = element_text(angle=75,hjust=1),
+        axis.ticks.x = element_line(size=0.5)) +
+     scale_x_discrete(
+       guide = guide_axis(n.dodge =1),
+                     expand=c(0, 0)) +
+    scale_fill_discrete(name = "year")
+
+
+#ggplotly(m) # DC is a gross outlier, consider removal 
+
+
+```
+
+
+```{r Interactive Datatables, include=FALSE}
+
+names_yr=c("Year","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
+
+dt_av_yr=datatable(av_yr,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Overall Averages By State')),
+    colnames = c(
+      names_yr))
+
+
+
+names_st=c("State","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
+dt_av_st=datatable(av_st,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Overall Averages By State')),
+    colnames = c(
+      names_st))
+
+
+
+#RESPONSE
+
+
+names_av_st_r=c("State","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
+
+dt_av_st_r=datatable(av_st_r,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Overall Averages By State')),
+    colnames = c(
+      names_av_st_r))
+
+
+
+names_av_yr_r=c("Year","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
+
+dt_av_yr_r=datatable(av_yr_r,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Overall Averages By State')),
+    colnames = c(
+      names_av_yr_r))
+
+
+```
+
+```{r Average Crime USA, include=FALSE}
+
+
+
+crime_fig <- plot_ly(av_yr, x= ~year) %>%
+  add_lines(
+    y= ~(violent),
+    name = "Violent Crime",
+    type = 'scatter',
+    mode = 'lines+markers') %>%
+  
+  add_lines(
+    y= ~(robbery),
+    name = "Robberies",
+    visible = T) %>%
+  
+  add_lines(
+    y= ~(murder),
+    name = "Murder",
+    visible = T) %>%
+  
+    layout(
+      title = "Average Crime Rates in USA",  
+      xaxis = list(title = "Year",
+                   tickangle = 75),
+      yaxis = list(title = "Average per 100k People",
+                   margin = margin)) 
+
+
+
+
+
+```
+
+
+
+
+
+
+
+# Inferential Analysis
+
+
+
+# Sensitivity Analysis
+
+
+
+
+# Conclusions
+
+# References
+
+(Brookhart et al. 2014)
+
+Brookhart, M. A., Wyss, R., Layton, J. B., & Stürmer, T. (2013). Propensity score methods for confounding control in nonexperimental research. Circulation. Cardiovascular quality and outcomes, 6(5), 604–611. https://doi.org/10.1161/CIRCOUTCOMES.113.000359
+
+
+(Kleiber & Achim, 2008)
+
+Kleiber, C. & Zeileis, A. (2008). Applied Econometrics with R. Springer-Verlag.
+
+
+(Miller et. al, 2002)
+
+Miller, M., Azrael, D., & Hemenway, D. (2002). Rates of household firearm ownership and homicide across US regions and states, 1988-1997. American journal of public health, 92(12), 1988–1993. https://doi.org/10.2105/ajph.92.12.1988
+
+
+
+
+(Zimring, 2004)
+
+Zimring, F. (2004). Firearms, Violence, and the Potential Impact of Firearms Control. Journal of Law, Medicine & Ethics, 32(1), 34-37. doi:10.1111/j.1748-720X.2004.tb00446.x
+
+
+
+# Code Appendix
+
+```{r ref.label=knitr::all_labels(), echo = T, eval = F}
+```
