@@ -12,7 +12,7 @@ library(AER)
 library(scales)
 library(redres)
 library(stargazer)
-install.packages("stargazer")
+#install.packages("stargazer")
 data(Guns)
 ```
 
@@ -38,17 +38,17 @@ boxplot(Guns$violent~Guns$law) #TODO, add axis, legend, titles etc
 
 ```{r}
 #before weights
-mod2.2 = lmer((violent)~law+male+robbery+prisoners+male+density+(1|state)+(1|year), data=Guns) 
+mod2.2 = lmer((violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns) 
 ```
 
-```{r, results='asis', message = FALSE}
+```{r}
 
 #wip balance analysis
-bal1= lm(violent~law, Guns)
-summary(bal1)
+#bal1= glm(violent~l, Guns)
+#summary(bal1)
 
 
-bal2= lm(prisoners~law, Guns)
+bal2= lm(male~law, Guns)
 summary(bal2)
 
 
@@ -57,13 +57,13 @@ summary(bal2)
 bal3= lm(robbery~law, Guns)
 summary(bal3)
 
-bal1= lm(murder~law, Guns)
-summary(bal1)
 
-bal1= lm(male~law, Guns)
-summary(bal1)
+bal4= lm(murder~law, Guns)
+summary(bal4)
 
-stargazer(bal1, bal2, bal3, title="Results", align=TRUE,type = 'html')
+bal5_w= lm(density~law, Guns)
+summary(bal5_w)
+#stargazer(bal1, bal2, bal3, title="Results", align=TRUE,type = 'html')
 
 
 ```
@@ -71,44 +71,63 @@ stargazer(bal1, bal2, bal3, title="Results", align=TRUE,type = 'html')
 ```{r}
 
 #obtain weights using logistic regression and inverse weighted propensity scores
-mod_log = glm(law~law+male+robbery+prisoners+male+density,family=binomial, Guns)
+mod_log = glm(law~male+robbery+murder+prisoners+density,family=binomial, Guns)
 summary(mod_log)
 
 prob= mod_log$fitted
 
 pscore = ifelse(Guns$law=='yes', prob, 1-prob)
+Guns$pscore=pscore
 weight=1/pscore
 hist(pscore) #distribution right skewed, not terrible extremes, consider trimming [0.01,0.99]
 summary(pscore)
+Guns$pscore=pscore
+Guns$pscore=ifelse(pscore>0.99, 0.99, Guns$pscore)
+Guns$pscore=ifelse(pscore<0.01, 0.01, Guns$pscore)
+summary(Guns$pscore)
 
 
-#balancing after weights are applied
-bal1= lm(violent~law, Guns, weights=weight)
-summary(bal1)
+col.alpha<-function(color, alpha){
+  code=col2rgb(color)/256
+  rgb(code[1],code[2],code[3],alpha)
+}
+
+#better  hist
+hist(Guns$pscore[Guns$law=='yes'], breaks=25, col=col.alpha("red",.6), freq=F, ylim=c(0,5), xlab="Propensity Score", ylab="", main="Propensity Score Distribution")
+hist((Guns$pscore[Guns$law=='no']), breaks=25, col=col.alpha("lightblue",.6), freq=F, ylim=c(0,5), xlab="Propensity Score", ylab="", main="",add=T)
+legend(.4, 5, legend=c("Law: Yes", "Law: No"),
+       col=c("red", "blue"),fill = c("red", "lightblue") )
+```
 
 
-bal1= lm(prisoners~law, Guns, weights=weight)
-summary(bal1)
+```{r}
 
-bal1= lm(afam~law, Guns, weights=weight)
-summary(bal1)
-
-bal1= lm(cauc~law, Guns, weights=weight)
-summary(bal1)
+#wip balance analysis
+#bal1_w= glm(violent~law, Guns, #weights=weight)
+#summary(bal1_w)
 
 
-bal1= lm(robbery~law, Guns, weights=weight)
-summary(bal1)
-
-bal1= lm(murder~law, Guns, weights=weight)
-summary(bal1)
-
-bal1= lm(male~law, Guns, weights=weight)
-summary(bal1)
+bal2_w= lm(male~law, Guns, weights=weight)
+summary(bal2_w)
 
 
 
-mod2 = lmer((violent)~law+male+robbery+prisoners+male+density+(1|state)+(1|year), data=Guns, weights=weight)
+
+bal3_w= lm(robbery~law, Guns, weights=weight)
+summary(bal3_w)
+
+
+bal4_w= lm(murder~law, Guns, weights=weight)
+summary(bal4_w)
+
+
+bal4_w= lm(density~law, Guns, weights=weight)
+summary(bal4_w)
+
+```
+
+```{r}
+mod2 = lmer((violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns, weights=weight)
 summary(mod2.2)
 summary(mod2) #with reduced selection bias it appears the law is not contributing as much effect, that is, confounders played a significant role. 
 ```
