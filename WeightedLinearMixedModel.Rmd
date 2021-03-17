@@ -11,20 +11,22 @@ library(MASS)
 library(AER)
 library(scales)
 library(redres)
+library(MatchIt)
 library(stargazer)
 #install.packages("stargazer")
 data(Guns)
 ```
 
-```{r}
+```{r transformation}
 #distribution of response
+par(mfrow=c(1,2))
 hist(Guns$violent) #TODO, ADD AXIS
-
+hist(log(Guns$violent))
 ```
 
 
 
-```{r}
+```{r levels plot}
 #quick inverse weight propensity scores for law
 sapply(Guns, class)
 
@@ -36,39 +38,44 @@ pairs(Filter(is.numeric,Guns)) #correlations
 boxplot(Guns$violent~Guns$law) #TODO, add axis, legend, titles etc
 ```
 
-```{r}
+```{r Unweighted LMM}
 #before weights
-mod2.2 = lmer((violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns) 
+mod_pre = lmer(log(violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns) 
+summary(mod_pre)
 ```
 
-```{r}
-
+```{r prebalance, results='asis' }
+library(knitr)
 #wip balance analysis
 #bal1= glm(violent~l, Guns)
 #summary(bal1)
 
 
-bal2= lm(male~law, Guns)
-summary(bal2)
+bal1= lm(male~law, Guns)
+kpre1=kable(summary(bal1)[4],
+            caption = "lm(male ~ law)")
 
 
 
-
-bal3= lm(robbery~law, Guns)
-summary(bal3)
-
-
-bal4= lm(murder~law, Guns)
-summary(bal4)
-
-bal5_w= lm(density~law, Guns)
-summary(bal5_w)
-#stargazer(bal1, bal2, bal3, title="Results", align=TRUE,type = 'html')
+bal2= lm(robbery~law, Guns)
+kpre2=kable(summary(bal2)[4],
+            caption = "lm(robbery ~ law)")
 
 
+bal3= lm(murder~law, Guns)
+kpre3=kable(summary(bal3)[4],
+            caption = "lm(murder ~ law)")
+
+
+bal4= lm(density~law, Guns)
+kpre4=kable(summary(bal4)[4],
+            caption = "lm(density ~ law)")
+
+bal_pre = list(kpre1,kpre2, kpre3, kpre4)
+bal_pre
 ```
 
-```{r}
+```{r pscores}
 
 #obtain weights using logistic regression and inverse weighted propensity scores
 mod_log = glm(law~male+robbery+murder+prisoners+density,family=binomial, Guns)
@@ -100,41 +107,50 @@ legend(.4, 5, legend=c("Law: Yes", "Law: No"),
 ```
 
 
-```{r}
-
-#wip balance analysis
-#bal1_w= glm(violent~law, Guns, #weights=weight)
-#summary(bal1_w)
-
-
-bal2_w= lm(male~law, Guns, weights=weight)
-summary(bal2_w)
+```{r postbalance,results='asis' }
 
 
 
-
-bal3_w= lm(robbery~law, Guns, weights=weight)
-summary(bal3_w)
-
-
-bal4_w= lm(murder~law, Guns, weights=weight)
-summary(bal4_w)
+bal1= lm(male~law, Guns, weights=weight)
+kpost1=kable(summary(bal1)[5],
+            caption = "lm(male ~ law)")
 
 
-bal4_w= lm(density~law, Guns, weights=weight)
-summary(bal4_w)
+
+bal2= lm(robbery~law, Guns, weights=weight)
+kpost2=kable(summary(bal2)[5],
+            caption = "lm(robbery ~ law)")
+
+
+bal3= lm(murder~law, Guns, weights=weight)
+kpost3=kable(summary(bal3)[5],
+            caption = "lm(murder ~ law)")
+
+
+bal4= lm(density~law, Guns, weights=weight)
+kpost4=kable(summary(bal4)[5],
+            caption = "lm(density ~ law)")
+
+bal_post = list(kpost1,kpost2, kpost3, kpost4)
+bal_post
+```
+
+```{r weighted LMM}
+mod_post = lmer(log(violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns, weights=weight)
+
+summary(mod_post)
+
 
 ```
 
-```{r}
-mod2 = lmer((violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns, weights=weight)
-summary(mod2.2)
-summary(mod2) #with reduced selection bias it appears the law is not contributing as much effect, that is, confounders played a significant role. 
+
+```{r Diagnostics}
+plot_redres(mod_post, type = "std_cond")
+plot_resqq(mod_post)
+plot_ranef(mod_post)
 ```
 
 
-```{ R Diagnostics}
-plot_redres(mod2, type = "std_cond")
-plot_resqq(mod2)
-plot_ranef(mod2)
-```
+
+
+
