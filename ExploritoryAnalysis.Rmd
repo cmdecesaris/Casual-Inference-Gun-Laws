@@ -70,9 +70,9 @@ av_yr = Guns %>% # average all states each years
   group_by(year)%>%
   summarise_all(mean)%>%
   mutate_if(is.numeric,funs(round(.,2)))
-
+av_yr
 #delete null cols
-av_yr=dplyr::select(av_yr,-c(6,7,12,13))
+av_yr=dplyr::select(av_yr,-c(12,13))
 av_st=dplyr::select(av_st,-c(2,7,8,13))
 ```
 
@@ -221,27 +221,10 @@ dt_av_yr_r=datatable(av_yr_r,
 ```
 
 
-```{r}
-v = Guns %>%
-  
-  filter() %>% 
-  
-  ggplot(
-    aes(x=year,
-        y=population,
-        group=state,
-        color=state)) +
-  
-      geom_line() 
-
-ggplotly(v)
 
 
 
-```
-
-
-```{r Average Crime USA, include=FALSE}
+```{r Average Crime USA Plot, include=FALSE}
 
 
 
@@ -262,8 +245,14 @@ crime_fig <- plot_ly(av_yr, x= ~year) %>%
     name = "Murder",
     visible = T) %>%
   
+    add_lines(
+    y= ~(prisoners),
+    name = "Prisoners",
+    visible = T) %>%
+  
+  
     layout(
-      title = "Average Crime Rates in USA",  
+      title = "Average Crime and Incarceration Rates in the USA",  
       xaxis = list(title = "Year",
                    tickangle = 75),
       yaxis = list(title = "Average per 100k People",
@@ -271,9 +260,55 @@ crime_fig <- plot_ly(av_yr, x= ~year) %>%
 
 
 
-
+crime_fig
 
 ```
+
+```{r}
+av_yr$other= (100-(av_yr$afam+av_yr$cauc))
+
+
+crime_fig <- plot_ly(av_yr, x= ~year) %>%
+  add_lines(
+    y= ~(male),
+    name = "Males: Ages 10-29",
+    type = 'scatter',
+    mode = 'lines+markers') %>%
+  
+  add_lines(
+    y= ~(afam),
+    name = "African Americans: Ages 10-64",
+    visible = T) %>%
+  
+  add_lines(
+    y= ~(cauc),
+    name = "Caucation Americans: Ages 10-64",
+    visible = T) %>%
+
+  add_lines(
+    y= ~(other),
+    name = "Other American Ethnicities: Ages 10-64",
+    visible = T) %>%
+  
+    layout(
+      title = "Population Demographics",  
+      xaxis = list(title = "Year",
+                   tickangle = 75),
+      yaxis = list(title = "Average percent of Population",
+                   margin = margin),
+      legend)
+      
+
+
+
+crime_fig
+```
+
+
+
+
+
+
 
 
 
