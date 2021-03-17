@@ -2,19 +2,34 @@
 title: "Report"
 author: "Christina De Cesaris"
 date: "3/13/2021"
-output: html_document
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
 ---
-
+# Abstract
 
 # Introduciton and Background
 
+The controversy surrounding guns has become a hotbed for political discourse in recent years. Some have linked gun ownership to increases in homicides, suicides, and organized criminal activity (Miller et. al, 2002). A 2004 publication found that owning a gun makes a person three to five times more likely to die by violence (Zimring). Others have suggested that gun ownership does not lead to a net increase in crime but rather increased crime leads to more gun ownership. In the case of this argument, authors argued that gun control laws would be ineffective in reducing violent crime (Kleck et. al, 2002). 
 
-## Methodology
+In this project, we investigate the relationship between population demographics, various crime rates, and shall carry gun laws across different regions of the United States between 1977-1999. Shall carry gun laws are laws which allow only licensed, trained, and background checked citizens to carry concealed guns in specific states. 
 
 
-# Exploratory Analysis 
+We seek to answer the following questions:
 
-```{r Libraries, echo=FALSE, warning=FALSE}
+1. What is the effect of shall carry laws on violent crime in the United States?
+
+2. Is this relationship casual?
+
+It is important to note that a key point regarding the theory of causal interference is the factor variable in question should be changeable. In the case of this project, the shall-carry law in effect is a factor which can be implemented or rescinded by law makers making it ideal for this analysis. 
+
+# Dataset
+
+The dataset was downloaded using the AER package in R. It consists of 13 variables and of 1173 observations. The data spanned twenty-two years and contained for fifty American states and the District of Colombia. The variables are as described from the source as follows:
+(Stock & Watson, 2007)
+
+```{r Libraries, warning=FALSE, include=FALSE}
 
 # plotting 
 library(redres)
@@ -33,12 +48,35 @@ library(scales)
 library(grid)
 library(gridExtra)
 library(stargazer)
+library(knitr)
 
 # data
 library(AER)
 library(DT)
 data(Guns)
 ```
+
+```{r echo=FALSE,  results='asis'}
+
+
+variable = c("state",
+  "year","violent","murder","robbery","prisoners","afam","cauc","male","population","income","density","law")
+
+desciption=c("factor indicating state.","factor indicating year.",'violent crime rate (incidents per 100,000 members of the population).',"murder rate (incidents per 100,000).","robbery rate (incidents per 100,000).",'incarceration rate in the state in the previous year (sentenced prisoners per 100,000 residents; value for the previous year).',"percent of state population that is African-American, ages 10 to 64.","percent of state population that is Caucasian, ages 10 to 64.","percent of state population that is male, ages 10 to 29.","state population, in millions of people.","real per capita personal income in the state (US dollars).","population per square mile of land area, divided by 1,000.","factor. Does the state have a shall carry law in effect in that year?")
+
+
+vars=cbind(variable, desciption)
+
+kable(vars)
+
+
+```
+
+
+
+# Exploratory Analysis 
+
+
 
 ```{r Summary Dataframes, warning=FALSE, include=FALSE}
 
@@ -76,12 +114,137 @@ av_yr = Guns %>% # average all states each years
   mutate_if(is.numeric,funs(round(.,2)))
 
 #delete null cols
-av_yr=dplyr::select(av_yr,-c(6,7,12,13))
+av_yr1=av_yr
+av_yr=dplyr::select(av_yr,-c(12,13))
+av_yr1=dplyr::select(av_yr1,-c(7,8,12,13))
 av_st=dplyr::select(av_st,-c(2,7,8,13))
 ```
 
+```{r Interactive Datatables Code, include=FALSE}
+all_dat=datatable(Guns,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Full, Raw Dataset')))
 
-```{r Yearly Trends All States Plots}
+
+names_yr=c("Year","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
+
+dt_av_yr=datatable(av_yr1,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 2: ',
+    htmltools::em(
+      'Numeric Variable Averages By Year')),
+    colnames = c(
+      names_yr))
+
+
+
+names_st=c("State","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
+dt_av_st=datatable(av_st,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 3: ',
+    htmltools::em(
+      'Numeric Variable Averages By State')),
+    colnames = c(
+      names_st))
+
+
+
+#RESPONSE
+
+
+names_av_st_r=c("State","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
+
+dt_av_st_r=datatable(av_st_r,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 4: ',
+    htmltools::em(
+      'Violent Crime Summary Statistics by State')),
+    colnames = c(
+      names_av_st_r))
+
+
+
+names_av_yr_r=c("Year","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
+
+dt_av_yr_r=datatable(av_yr_r,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 5: ',
+    htmltools::em(
+       'Violent Crime Summary Statistics by Year')),
+    colnames = c(
+      names_av_yr_r))
+
+```
+
+The full, raw dataset is provided as an interactive table for viewer purposes:
+
+```{r echo=FALSE}
+all_dat
+```
+
+
+Summary averages of all numerical variables were grouped by state and year and constructed into respective interactive data tables. Washington DC and the year 1993 have the highest average rates for violent crime.
+
+```{r echo=FALSE}
+
+dt_av_yr
+dt_av_st
+
+```
+The summary statistics: mean, median, standard deviation, minimum, and maximum of our response: violent crime rates were calculated for year and state respectively.
+
+```{r echo=FALSE}
+dt_av_st_r
+dt_av_yr_r
+```
+
+
+A scatter plot matrix was created for numerical variables along with their calculated pearson correlation coefficients to assess the relationships between potential predictors and the response. 
+
+From the matrix, violent crime has high positive correlation with murder rates, robbery rates, and prison rates. Violent crime has a weak negative correlation with young male populations. 
+
+
+
+```{r cor plot, echo=FALSE}
+
+#sapply(Guns, class) ensure all variables are as should be
+
+
+panel_cor <- function(x, y){ #used to generate lower panel of pearson correlation coefficents for pairs plot
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- round(cor(x, y, use="complete.obs"), digits=2)
+  txt <- paste0("R = ", r)
+  cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex = cex.cor )
+}
+
+pairs(Guns[sapply(Guns, is.numeric)], 
+      lower.panel = panel_cor)
+
+
+
+```
+
+A plot comparing violent crime rates to whether or not a shall-carry law is in effect shows lower average violent crime rates compared to when the law is not in effect. But whether this is significant or not is unclear for the graph alone. 
+
+```{r level plot, echo=FALSE}
+#level plot
+boxplot(Guns$vio~Guns$law,
+        xlab = "Is Shall-Carry Law in Effect?",
+        ylab = "Violent Crime Rate",
+        main="Level Comparision: Violent Crime Rate vs Law",
+        col=c('red','lightblue'))
+```
+
+
+Interactive time-series plots of year violent crime rates for each state reveal Washington DC as an outlier.  We considered dropping Washington DC, but this data was not a result of misrecording or other oddity. Washington DC did have disproportional amounts of crime in the 1980s and 1990s so the level was kept.
+
+In the case of all interactive plots in this project, singularly clicking on a legend item will remove it from the graph. Double clicking on a legend item will plot it individually.
+
+```{r Yearly Trends All States Plots, echo=FALSE}
 
 
 
@@ -108,33 +271,8 @@ v=Guns %>%
     scale_fill_discrete(name = "State")
 
 
-#ggplotly(v)
+ggplotly(v)
 
-r = Guns %>%
-  
-  ggplot( 
-    aes(x=year,
-        y=robbery,
-        group=state,
-        color=state)) +
-    geom_line() +
-    labs(
-      title="Yearly Trends in Robbery Crime by State",
-      x="School ID",
-      y = "Robbery Crime Rate per 100K People") +
-    theme(
-      text = element_text(
-        size=8,
-        face = 'bold'),
-        axis.text.x = element_text(angle=75,hjust=1),
-        axis.ticks.x = element_line(size=0.5)) +
-     scale_x_discrete(
-       guide = guide_axis(n.dodge =1),
-                     expand=c(0, 0)) +
-     scale_fill_discrete(name = "State")
-
-
-#ggplotly(r)
 
 
 m = Guns %>%
@@ -161,66 +299,22 @@ m = Guns %>%
     scale_fill_discrete(name = "year")
 
 
-#ggplotly(m) # DC is a gross outlier, consider removal 
+ggplotly(m) # DC is a gross outlier, consider removal 
 
 
 ```
 
+A boxplot of violent crime rates for each year again shows significant outliers which all happen to be the values from Washington DC. Violent crime rates appear to fluctuate over time with the sharpest increase occuring in the early 1990s. 
 
-```{r Interactive Datatables, include=FALSE}
-
-names_yr=c("Year","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
-
-dt_av_yr=datatable(av_yr,
-          class = 'cell-border stripe',
-          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
-    htmltools::em(
-      'Overall Averages By State')),
-    colnames = c(
-      names_yr))
-
-
-
-names_st=c("State","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
-dt_av_st=datatable(av_st,
-          class = 'cell-border stripe',
-          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
-    htmltools::em(
-      'Overall Averages By State')),
-    colnames = c(
-      names_st))
-
-
-
-#RESPONSE
-
-
-names_av_st_r=c("State","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
-
-dt_av_st_r=datatable(av_st_r,
-          class = 'cell-border stripe',
-          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
-    htmltools::em(
-      'Overall Averages By State')),
-    colnames = c(
-      names_av_st_r))
-
-
-
-names_av_yr_r=c("Year","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
-
-dt_av_yr_r=datatable(av_yr_r,
-          class = 'cell-border stripe',
-          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
-    htmltools::em(
-      'Overall Averages By State')),
-    colnames = c(
-      names_av_yr_r))
-
-
+```{r echo=FALSE}
+ggplotly(m)
 ```
 
-```{r Average Crime USA, include=FALSE}
+
+
+A plot of average crime rates (violent, robbery, murder) and incarceration rates shows the positive correlation between crime rates as they fluctuate overtime. Interestingly, the average incarceration rates continue to increase even when crime rates decrease leading us to believe there are other reasons besides crime causing this vast increase in prisioners. 
+
+```{r Average Crime USA Plot, echo=FALSE}
 
 
 
@@ -241,8 +335,14 @@ crime_fig <- plot_ly(av_yr, x= ~year) %>%
     name = "Murder",
     visible = T) %>%
   
+    add_lines(
+    y= ~(prisoners),
+    name = "Incarceration",
+    visible = T) %>%
+  
+  
     layout(
-      title = "Average Crime Rates in USA",  
+      title = "Average Crime and Incarceration Rates in the USA",  
       xaxis = list(title = "Year",
                    tickangle = 75),
       yaxis = list(title = "Average per 100k People",
@@ -250,7 +350,308 @@ crime_fig <- plot_ly(av_yr, x= ~year) %>%
 
 
 
+crime_fig
 
+```
+Ethnic demographic percentages other than Caucasian and African American were not included in this dataset. We manually calculated the percentages of other ethnicities using those provided. As a result, the 'other' ethnicities category mirrors that of the Caucasian category. Because of these inconsistencies, ethnicities percentages were not considered for our model. 
+
+However, the young male demographic percentage was chosen for our model. Isolating the young male demographic into its own graph (done by double clicking 'Males...' in the legend) shows a decrease in the young male demographic between 1977 and 1999.
+
+```{r Demographics, echo=FALSE}
+av_yr$other= (100-(av_yr$afam+av_yr$cauc))
+
+
+demo_fig <- plot_ly(av_yr, x= ~year) %>%
+  add_lines(
+    y= ~(male),
+    name = "Males: Ages 10-29",
+    type = 'scatter',
+    mode = 'lines+markers') %>%
+  
+  add_lines(
+    y= ~(afam),
+    name = "African Americans: Ages 10-64",
+    visible = T) %>%
+  
+  add_lines(
+    y= ~(cauc),
+    name = "Caucation Americans: Ages 10-64",
+    visible = T) %>%
+
+  add_lines(
+    y= ~(other),
+    name = "Other American Ethnicities: Ages 10-64",
+    visible = T) %>%
+  
+    layout(
+      title = "Average Yearly Population Demographics",  
+      xaxis = list(title = "Year",
+                   tickangle = 75),
+      yaxis = list(title = "Average percent of Population",
+                   margin = margin),
+      legend)
+      
+
+
+
+demo_fig
+```
+
+
+
+
+
+# Inferential Analysis
+
+## Linear Mixed Model Statistical Form 
+
+We propose a propensity weighted linear mixed model to determine if a casual relationship exists between a state's shall-carry law status and violent crime rates.
+
+It is under our assumption that multiple factors contribute to the implementation of a shall-carry law, and we believe density, robbery rate, murder rate, young male demographics, and incarceration rates have confounding effects on both law implementation and violent crime rates.   
+
+The lmerTest package was used to fit our Linear Mixed-Effects Models. Since the data contained a multitude of observations for different states over the course of twenty-two years, we assumed existing random, immeasurable effects were present in our data. In this model, we define state and year effects as random effects we cannot control.
+
+Our Linear Mixed-Effects Model takes the following form:
+
+
+$$ \vec y = {  \boldsymbol X  \vec \beta} + {\boldsymbol Z  \vec u} + {\vec \epsilon}$$
+Where
+
+- $\vec y$ represents the $1173 \times 1$ vector of violent crime rates. 
+
+- $\vec w$ represents a $1 \times 1173$ vector of weights
+
+- $X$ is a $1173 \times 7$ matrix of our fixed effects variables:law, male, density, murder rates, robbery rates and incarceration rates. The first entry of $X$ is $1$ to include the intercept.
+
+- $ \vec \beta$ is a $7 \times 1$ vector of our fixed effects coefficients and intercept. 
+
+- $Z$ is a $1173 \times 2$ matrix for the observed values for the $2$ random variables:state and year. 
+
+- $\vec u$ is a $2 \times1 $ represents the unobserved random effects for our random variables (analogous to $ \vec \beta$ for fixed variables)
+
+- Finally, $\vec \epsilon$ is a $1173 \times 1$ vector which captures the random portion of $y$ not included by the rest of the model.
+
+Note that the weights do not appear in the mathematical form of this model. This is because the type of weight applied is conditional on the observed value of $X_{law}$. More is explained in the following weights section. 
+
+(McCullagh & Nelder, 1989)
+
+## Weights 
+
+Propensity score methods attempt to account for the probability of a certain treatment occurring given other observed covariates in the model. In an ideal situation, the use of propensity score methods will reduce selection bias introduced by confounding effects in our model.
+
+We assume that young male demographics, density, murder rates, robbery rates and incarceration rates influence both the value of law and violence rates. For example, it is possible that higher murder rates will influence both violent crime and whether law makers decided to enact a shall-carry law. 
+
+And so, the weights derived from our propensity scores seek to reduce the selection bias young male demographics, density, murder rates, robbery rates and incarceration rates have on law, so we have a clearer idea of the average effect of law on violent crime rates. 
+
+(Olmos & Govindasmy, 2015)
+
+To calculate weights, first the probability of law = 'yes'or law='no' was estimated given our covaraites. In this project, probabilities were estimated using a logistic regression model defined as follows:
+
+$$P(y_{law}^{(i)}=yes)=\frac{1}{1+exp(-(\beta_{0}+\beta_{1}x^{(i)}_{1}+\ldots+\beta_{p}x^{(i)}_{p}))}$$
+where $1 \ldots p$ represent $male, robbery, murder, prisoners, \& \ density$ respectively.
+
+The estimated probabilities from logistic regression are then converted from probabilities into weights using the Inverse Probability of Treatment Weights method which follows as:
+
+Scores for where law = 'yes':
+ $w_i = \frac{1}{\hat{p_i}}$
+ 
+ 
+Scores for where law = 'no':
+ $w_i = \frac{1}{(1-\hat{p_i})}$
+ 
+ 
+ 
+These weights were then applied to the linear mixed model. 
+  
+## Applying the Model
+
+The distribution of the response was plotted and found to be right skewed. As a result, a log transformation was applied to the response to make the distribution more normal.
+
+```{r transformation, echo=FALSE}
+#distribution of response
+par(mfrow=c(1,2))
+hist(Guns$violent,
+     xlab="Violent Crime Rate",
+     main= "Raw",
+     col="yellow") #TODO, ADD AXIS
+hist(log(Guns$violent),
+     xlab="log(Violent Crime Rate)",
+     main="Log-Transformed",
+     col="lightgreen")
+```
+An unweighted linear mixed model was initially fit using law, male, robbery, murder, prisoners, and density as predictors. As mentioned previously, state and year were considered random. 
+
+From the unweighted model:
+  
+  - the intercept, prisoners, robbery, and male were all significantly (p<0.001)and positively related with log(violent)
+  
+  - law = 'yes' was significantly (level: 0.05) and negatively correlated with log(violent)
+  
+  - density and murder were not significant 
+
+
+```{r Unweighted LMM}
+#before weights
+mod_pre = lmer(log(violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns) 
+summary(mod_pre)
+```
+
+Before constructing weights, balancing analysis was performed to evaluate the effect of our covariates with regard to our treatment group law.
+
+From the pre-weighted balance analysis, we see there is significant imbalance between law and all other covariates. In an ideal situation, the addition of propensity weights to these models will decrease the imbalance, and therefore make the relationship between our treatment and covariates insignficant. 
+
+**Pre-Weighted Balance Analysis**
+```{r prebalance, echo=FALSE, results='asis'}
+
+
+
+bal1= lm(male~law, Guns)
+kpre1=kable(summary(bal1)[4],
+            caption = "lm(male ~ law)")
+
+
+
+bal2= lm(robbery~law, Guns)
+kpre2=kable(summary(bal2)[4],
+            caption = "lm(robbery ~ law)")
+
+
+bal3= lm(murder~law, Guns)
+kpre3=kable(summary(bal3)[4],
+            caption = "lm(murder ~ law)")
+
+
+bal4= lm(density~law, Guns)
+kpre4=kable(summary(bal4)[4],
+            caption = "lm(density ~ law)")
+
+bal_pre = list(kpre1,kpre2, kpre3, kpre4)
+bal_pre
+```
+
+
+As previously stated, the probabilities use in weighting were calculated by a logistic regression model using our treatment (law) as the response and our other fixed effects as predictors.  
+
+```{r logmodel, echo=FALSE, warning=FALSE}
+
+#obtain weights using logistic regression and inverse weighted propensity scores
+mod_log = glm(law~male+robbery+murder+prisoners+density,family=binomial, Guns)
+summary(mod_log)
+```
+
+After the probability scores were converted into pscores, the pscores were trimmed to reduce instability. 
+The distribution of all pscores was plotted, but this in itself is not particularly useful besides showing the distribution of scores. 
+
+On the other hand, the plot of the overlapping distributions of law='yes' and law='no' reveal there is similarities between the distributions. The observations corresponding to the pscores in this purple area have similar covariate observations for different values of law. In some ways, the weights allow us to look at the model with priority on these covaraite 'balanced' observations. However, given the amount of non-overlap, we can infer that not all covaraites will be balanced.
+
+
+```{r pscores, echo=TRUE}
+prob= mod_log$fitted #probabilities
+
+pscore = ifelse(Guns$law=='yes', prob, 1-prob)
+
+Guns$pscore=pscore
+
+weight=1/pscore
+
+ #distribution left skewed, not terrible extremes, consider trimming [0.01,0.99]
+
+Guns$pscore=pscore
+Guns$pscore=ifelse(pscore>0.99, 0.99, Guns$pscore)
+Guns$pscore=ifelse(pscore<0.01, 0.01, Guns$pscore)
+summary(Guns$pscore)
+
+```
+```{r echo=FALSE}
+
+col.alpha<-function(color, alpha){ #changes opacity of color by factor of alpha
+  code=col2rgb(color)/256
+  rgb(code[1],code[2],code[3],alpha)
+}
+
+hist(pscore,
+     breaks=50, 
+     col="violet", 
+     freq=F, 
+     ylim=c(0,5), 
+     xlab="Propensity Score", 
+     ylab="",
+     main="Propensity Score Distribution: Ignoring Level")
+#better  hist
+hist(Guns$pscore[Guns$law=='yes'], 
+     breaks=30, 
+     col=col.alpha("red",.6), 
+     freq=F, 
+     ylim=c(0,5), 
+     xlab="Propensity Score", 
+     ylab="",
+     main="Propensity Score Distribution: Treatment vs Control")
+
+hist((Guns$pscore[Guns$law=='no']),
+     breaks=30,
+     col=col.alpha("lightblue",.6), 
+     freq=F, ylim=c(0,5), 
+     xlab="Propensity Score", 
+     ylab="",
+     main="",
+     add=T)
+
+legend(.4,5, 
+       legend=c("Law: Yes", "Law: No"),
+       col=c("red", "blue"),
+       fill = c("red", "lightblue") )
+```
+
+Unsurprisingly, the addition of weights did not provide perfect balance. Balance was achieved with regard to the covarite male, and imbalance was reduced with regard to the covariate murder. The imbalance resulting from robbery and density was decreased (as seen by the increased p-values) but this change was not significant.  
+
+**Weighted Balance Assessment**
+```{r postbalance, echo=FALSE, results='asis'}
+
+
+
+bal1= lm(male~law, Guns, weights=weight)
+kpost1=kable(summary(bal1)[5],
+            caption = "lm(male ~ law)")
+
+
+
+bal2= lm(robbery~law, Guns, weights=weight)
+kpost2=kable(summary(bal2)[5],
+            caption = "lm(robbery ~ law)")
+
+
+bal3= lm(murder~law, Guns, weights=weight)
+kpost3=kable(summary(bal3)[5],
+            caption = "lm(murder ~ law)")
+
+
+bal4= lm(density~law, Guns, weights=weight)
+kpost4=kable(summary(bal4)[5],
+            caption = "lm(density ~ law)")
+
+bal_post = list(kpost1,kpost2, kpost3, kpost4)
+bal_post
+
+```
+
+
+The final, weighted linear mixed model was fit using law, male, robbery, murder, prisoners, and density as predictors. Again, state and year were considered random varaibles. 
+
+From the weighted model:
+  
+  - the intercept, prisoners, robbery, and male were all significantly (p<0.001)and positively related with log(violent)
+  
+  - law = 'yes' was significantly (level: 0.1) and negatively correlated with log(violent). The effect of law was found to be less signficant with the addition of weights. This indicates some bias was effectively removed from the model
+  
+  - density and murder were not significant 
+
+
+```{r weighted LMM, echo=FALSE}
+mod_post = lmer(log(violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns, weights=weight)
+
+summary(mod_post)
+
+sm=summary(mod_post)
 
 ```
 
@@ -259,17 +660,48 @@ crime_fig <- plot_ly(av_yr, x= ~year) %>%
 
 
 
-
-# Inferential Analysis
-
-
-
 # Sensitivity Analysis
 
+Sensitivity analysis allows us to evaluate the sufficiency of the model according to how well it follows initial assumptions. 
+
+For this model, the assumption of homogeneity of variance is followed given the residuals plot. As well, the linear assumption appears to hold as there is no distinct or clear pattern indicated by the residuals plot.
+
+```{r Diagnostics, echo=FALSE}
+plot_redres(mod_post, type = "std_cond")
+  
+```
+
+Another important linear assumption is the normality assumption. We assumed the randomness of our model follows a normal distribution. From the QQ plot of residuals, we see this assumption is roughly met. The plot indicates there are heavy tails possibly as a result of outliers.
+The distribution of residuals as well appears roughly normal. 
+```{r echo=FALSE}
+
+plot_resqq(mod_post)
+hist(sm$residuals, breaks=30, main="Residuals Distribution", xlab="Residuals")
+
+
+
+```
+
+While the random effects from our model are in some way incorporated into the previous QQ plot, it is a good idea to check if our random variables year and state hold up to the normality assumption as well. From the quantile plots below, it appears both year and state do not deviate greatly from the normal distribution.
+
+```{r echo=FALSE}
+plot_ranef(mod_post)
+```
+
+We also assumed the independence of fixed variables in our model. After calculating the variance inflation factors (VIF) for our model, we see there aren't any instances of high multicoliniarity (usually indicated by VIF > 2.5 in conservative cases)
+
+```{r}
+vif(mod_post)
+```
 
 
 
 # Conclusions
+
+Controversy regarding gun control laws and their effectiveness has been the source of several political conflicts. The purpose of this project is to analyze the issue from a statistical perspective in order to see if there exists a casual relationship between shall-carry gun laws and violent crime rates in the USA. 
+
+
+
 
 # References
 
@@ -278,16 +710,26 @@ crime_fig <- plot_ly(av_yr, x= ~year) %>%
 Brookhart, M. A., Wyss, R., Layton, J. B., & Stürmer, T. (2013). Propensity score methods for confounding control in nonexperimental research. Circulation. Cardiovascular quality and outcomes, 6(5), 604–611. https://doi.org/10.1161/CIRCOUTCOMES.113.000359
 
 
+(Kleck et. al, 2002)
+
+Kleck, G., Kovandzic, T., & Bellows, J. (2016). Does Gun Control Reduce Violent Crime? Criminal Justice Review, 41(4), 488–513. https://doi.org/10.1177/0734016816670457
+
 (Kleiber & Achim, 2008)
 
 Kleiber, C. & Zeileis, A. (2008). Applied Econometrics with R. Springer-Verlag.
 
+McCullagh, P, & Nelder, J. A. (1989). Generalized Linear Models, 2nd ed. Chapman & Hall/CRC Press.
 
 (Miller et. al, 2002)
 
 Miller, M., Azrael, D., & Hemenway, D. (2002). Rates of household firearm ownership and homicide across US regions and states, 1988-1997. American journal of public health, 92(12), 1988–1993. https://doi.org/10.2105/ajph.92.12.1988
 
+(Olmos & Govindasmy, 2015)
+Olmos, A., & Govindasamy, P. (2015). A Practical Guide for Using Propensity Score Weighting in R. Practical
+Assessment, Research & Evaluation, 20(13). 
 
+(Stock & Watson, 2007)
+Stock, J.H. and Watson, M.W. (2007). Introduction to Econometrics, 2nd ed. Boston: Addison Wesley.
 
 
 (Zimring, 2004)
