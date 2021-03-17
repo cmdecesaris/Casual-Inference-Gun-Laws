@@ -1,0 +1,689 @@
+---
+title: "Gun Laws and  Violence Analysis"
+author: "Christina De Cesaris"
+date: "3/16/2021"
+output:
+  ioslides_presentation:
+    widescreen: yes
+    smaller: true
+    css: scroll.css
+
+params:
+  spotlight: "Houston"
+---
+
+
+
+
+
+
+
+
+## Introduction and Background
+
+- Gun control laws are highly controversial yet highly relevant
+- Studies link gun ownership to increased homicides, suicides and crime
+- Research suggests gun control laws are ineffective
+
+**Shall-Carry Laws:** state implemented laws which require citizens to be licensed and background checked before being allowed to carry a concealed weapon
+
+*Using Data Can We Answer:*
+
+1. What is the effect of shall carry laws on violent crime in the United States?
+
+2. Is this relationship casual?
+
+
+
+## The Data
+
+
+```{r message=FALSE, warning=FALSE}
+library(AER)
+data(Guns)
+str(Guns)
+```
+
+
+
+## Variables
+
+```{r Libraries, message=FALSE, warning=FALSE, include=FALSE}
+
+# plotting 
+library(redres)
+library(ggplot2)
+library(plotly)
+
+
+# analysis
+library(MASS)
+library(tidyverse)
+library(lmerTest)
+library(scales)
+
+
+# formatting
+library(grid)
+library(gridExtra)
+library(stargazer)
+library(knitr)
+
+# data
+library(AER)
+library(DT)
+data(Guns)
+```
+
+```{r echo=FALSE,  results='asis'}
+
+
+variable = c("state",
+  "year","violent","murder","robbery","prisoners","afam","cauc","male","population","income","density","law")
+
+desciption=c("factor indicating state.","factor indicating year.",'violent crime rate (incidents per 100,000 members of the population).',"murder rate (incidents per 100,000).","robbery rate (incidents per 100,000).",'incarceration rate in the state in the previous year (sentenced prisoners per 100,000 residents; value for the previous year).',"percent of state population that is African-American, ages 10 to 64.","percent of state population that is Caucasian, ages 10 to 64.","percent of state population that is male, ages 10 to 29.","state population, in millions of people.","real per capita personal income in the state (US dollars).","population per square mile of land area, divided by 1,000.","factor. Does the state have a shall carry law in effect in that year?")
+
+
+vars=cbind(variable, desciption)
+
+kable(vars)
+
+
+```
+
+
+
+# Exploratory Data Analysis
+```{r Summary Dataframes, warning=FALSE, include=FALSE}
+
+
+av_st = Guns %>%
+  group_by(state) %>% # average all state
+  summarise_all(mean) %>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_st
+#av_st
+
+
+av_st_r = Guns %>%
+  group_by(state) %>% # average all state
+  summarise(mean(violent),median(violent), sd(violent), max(violent), min(violent))%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_st_r
+
+
+av_yr_r = Guns %>%
+  group_by(year) %>% # average all state
+  summarise(mean(violent),median(violent), sd(violent), max(violent), min(violent))%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_yr_r
+
+av_styr = Guns %>%   # average each year each state
+  group_by(year,state) %>%
+  summarise_all(mean)%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+av_styr
+
+av_yr = Guns %>% # average all states each years
+  group_by(year)%>%
+  summarise_all(mean)%>%
+  mutate_if(is.numeric,funs(round(.,2)))
+
+#delete null cols
+av_yr1=av_yr
+av_yr=dplyr::select(av_yr,-c(12,13))
+av_yr1=dplyr::select(av_yr1,-c(7,8,12,13))
+av_st=dplyr::select(av_st,-c(2,7,8,13))
+```
+```{r Interactive Datatables Code, include=FALSE}
+all_dat=datatable(Guns,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 1: ',
+    htmltools::em(
+      'Full, Raw Dataset')))
+
+
+names_yr=c("Year","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
+
+dt_av_yr=datatable(av_yr1,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 2: ',
+    htmltools::em(
+      'Numeric Variable Averages By Year')),
+    colnames = c(
+      names_yr))
+
+
+
+names_st=c("State","Violent Crime Rate","Murder Rate","Robbery Rate","Prisoners","Percent Male","Population", "Income","Density")
+dt_av_st=datatable(av_st,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 3: ',
+    htmltools::em(
+      'Numeric Variable Averages By State')),
+    colnames = c(
+      names_st))
+
+
+
+#RESPONSE
+
+
+names_av_st_r=c("State","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
+
+dt_av_st_r=datatable(av_st_r,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 4: ',
+    htmltools::em(
+      'Violent Crime Summary Statistics by State')),
+    colnames = c(
+      names_av_st_r))
+
+
+
+names_av_yr_r=c("Year","Mean Violence Rate", "Median Violence Rate", "Standard Deviation Violence Rate","Max Violence Rate","Min Violence Rate" )
+
+dt_av_yr_r=datatable(av_yr_r,
+          class = 'cell-border stripe',
+          caption = htmltools::tags$caption(style = 'caption-side: bottom; text-align: center;','Table 5: ',
+    htmltools::em(
+       'Violent Crime Summary Statistics by Year')),
+    colnames = c(
+      names_av_yr_r))
+
+```
+
+
+## Summary Averages: State
+
+```{r echo=FALSE}
+
+
+dt_av_st
+
+```
+
+## Summary Averages: Year
+
+
+```{r echo=FALSE}
+
+dt_av_yr
+
+
+```
+
+
+## Summary Statistics: Violent Crime by State
+
+
+
+```{r echo=FALSE}
+dt_av_st_r
+
+```
+
+
+
+## Summary Statistics: Violent Crime by Year
+
+
+```{r echo=FALSE}
+
+dt_av_yr_r
+```
+
+
+## Violent Crime by Year: Boxplot
+
+```{r Yearly Trends All States Plots, echo=FALSE}
+
+
+
+v=Guns %>%
+  ggplot( 
+    aes(x=year,
+        y=violent,
+        group=state,
+        color=state)) +
+    geom_line() +
+    labs(
+      title="Yearly Trends in Violent Crime by State",
+      x="School ID",
+      y = "Violent Crime Rate per 100K Poeple") +
+    theme(
+      text = element_text(
+        size=8,
+        face = 'bold'),
+        axis.text.x = element_text(angle=75,hjust=1),
+        axis.ticks.x = element_line(size=0.5)) +
+     scale_x_discrete(
+       guide = guide_axis(n.dodge =1),
+                     expand=c(0, 0)) +
+    scale_fill_discrete(name = "State")
+
+
+#ggplotly(v)
+
+
+
+m = Guns %>%
+  
+  ggplot(
+    aes(x=year,
+        y=(violent),
+        group=year,
+        col=year)) +
+    geom_boxplot()+
+  labs(
+      title="USA Violent Crime by Year",
+      x="Year",
+      y = "Violent Crime Rate per 100K People") +
+    theme(
+      text = element_text(
+        size=8,
+        face = 'bold'),
+        axis.text.x = element_text(angle=75,hjust=1),
+        axis.ticks.x = element_line(size=0.5)) +
+     scale_x_discrete(
+       guide = guide_axis(n.dodge =1),
+                     expand=c(0, 0)) +
+    scale_fill_discrete(name = "year")
+
+
+ggplotly(m) # DC is a gross outlier, consider removal 
+
+
+```
+
+## Violent Crime by Year: Lines
+
+```{r Average Crime USA Plot, echo=FALSE}
+
+
+
+crime_fig <- plot_ly(av_yr, x= ~year) %>%
+  add_lines(
+    y= ~(violent),
+    name = "Violent Crime",
+    type = 'scatter',
+    mode = 'lines+markers') %>%
+  
+  add_lines(
+    y= ~(robbery),
+    name = "Robberies",
+    visible = T) %>%
+  
+  add_lines(
+    y= ~(murder),
+    name = "Murder",
+    visible = T) %>%
+  
+    add_lines(
+    y= ~(prisoners),
+    name = "Incarceration",
+    visible = T) %>%
+  
+  
+    layout(
+      title = "Average Crime and Incarceration Rates in the USA",  
+      xaxis = list(title = "Year",
+                   tickangle = 75),
+      yaxis = list(title = "Average per 100k People",
+                   margin = margin)) 
+
+
+
+crime_fig
+
+```
+
+## Correlation Matrix
+```{r cor plot, echo=FALSE}
+
+#sapply(Guns, class) ensure all variables are as should be
+
+
+panel_cor <- function(x, y){ #used to generate lower panel of pearson correlation coefficents for pairs plot
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- round(cor(x, y, use="complete.obs"), digits=2)
+  txt <- paste0("R = ", r)
+  cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex = cex.cor )
+}
+
+pairs(Guns[sapply(Guns, is.numeric)], 
+      lower.panel = panel_cor)
+
+
+
+```
+
+## Law vs Violent Crime Plot
+
+
+```{r level plot, echo=FALSE}
+#level plot
+boxplot(Guns$vio~Guns$law,
+        xlab = "Is Shall-Carry Law in Effect?",
+        ylab = "Violent Crime Rate",
+        main="Level Comparision: Violent Crime Rate vs Law",
+        col=c('red','lightblue'))
+```
+
+## Transformation of Response
+
+```{r transformation, echo=FALSE}
+#distribution of response
+par(mfrow=c(1,2))
+hist(Guns$violent,
+     xlab="Violent Crime Rate",
+     main= "Raw",
+     col="yellow") #TODO, ADD AXIS
+hist(log(Guns$violent),
+     xlab="log(Violent Crime Rate)",
+     main="Log-Transformed",
+     col="lightgreen")
+```
+
+
+# Inferential Analysis
+
+
+## Weighted Linear Mixed Effects Model: The Math
+
+
+$$ \vec y = {  \boldsymbol X  \vec \beta} + {\boldsymbol Z  \vec u} + {\vec \epsilon} $$
+
+Where
+
+- $\vec y$ represents the $1173 \times 1$ vector of violent crime rates. 
+
+- $\vec w$ represents a $1 \times 1173$ vector of weights
+
+- $X$ is a $1173 \times 7$ matrix of our fixed effects variables:law, male, density, murder rates, robbery rates and incarceration rates. The first entry of $X$ is $1$ to include the intercept.
+
+- $\vec \beta$ is a $7 \times 1$ vector of our fixed effects coefficients and intercept. 
+
+- $Z$ is a $1173 \times 2$ matrix for the observed values for the $2$ random variables:state and year. 
+
+- $\vec u$ is a $2 \times 1$ represents the unobserved random effects for our random variables (analogous to $ \vec \beta$ for fixed variables)
+
+- Finally, $\vec \epsilon$ is a $1173 \times 1$ vector which captures the random portion of $y$ not included by the rest of the model.
+
+## Propensity Scores
+
+**Assumption**
+
+- Young male demographics, density, murder rates, robbery rates and incarceration rates influence both *law and violence rates*
+
+ - Example: higher murder rates increase violent crime and cause lawmakers to enact a shall-carry law. 
+
+- Weights derived from propensity score methods seek to reduce the selection bias of covariates (murder rates) on our factor (law)
+
+- Grants a clearer idea of the average effect of law on violent crime rates. 
+
+- Can lead to casual inference
+
+## Logistic Regression Probability Estimates 
+
+- Estimate the probability of law = 'yes' or law='no'  given our covaraites. 
+
+In this project, probabilities were estimated through the logistic model: 
+
+$$P(y_{law}^{(i)}=yes)=\frac{1}{1+exp(-(\beta_{0}+\beta_{1}x^{(i)}_{1}+\ldots+\beta_{p}x^{(i)}_{p}))}$$
+where $1 \ldots p$ represent $male, robbery, murder, prisoners, \& \ density$ respectively.
+
+## Weights: The Math
+
+- Inverse Probability of Treatment Weights method
+
+- Estimated probabilities from logistic regression are  converted to weights 
+
+Scores for where law = 'yes':
+ $w_i = \frac{1}{\hat{p_i}}$
+ 
+ 
+Scores for where law = 'no':
+ $w_i = \frac{1}{(1-\hat{p_i})}$
+ 
+## Weights: The Code
+```{r logmodel, echo=FALSE, warning=FALSE}
+
+#obtain weights using logistic regression and inverse weighted propensity scores
+mod_log = glm(law~male+robbery+murder+prisoners+density,family=binomial, Guns)
+summary(mod_log)
+```
+
+
+```{r pscores, echo=TRUE}
+prob= mod_log$fitted #probabilities
+
+pscore = ifelse(Guns$law=='yes', prob, 1-prob)
+
+Guns$pscore=pscore
+
+weight=1/pscore
+
+ #distribution left skewed, not terrible extremes, consider trimming [0.01,0.99]
+
+Guns$pscore=pscore
+Guns$pscore=ifelse(pscore>0.99, 0.99, Guns$pscore)
+Guns$pscore=ifelse(pscore<0.01, 0.01, Guns$pscore)
+summary(Guns$pscore)
+
+```
+```{r echo=FALSE}
+
+col.alpha<-function(color, alpha){ #changes opacity of color by factor of alpha
+  code=col2rgb(color)/256
+  rgb(code[1],code[2],code[3],alpha)
+}
+
+hist(pscore,
+     breaks=50, 
+     col="violet", 
+     freq=F, 
+     ylim=c(0,5), 
+     xlab="Propensity Score", 
+     ylab="",
+     main="Propensity Score Distribution: Ignoring Level")
+#better  hist
+hist(Guns$pscore[Guns$law=='yes'], 
+     breaks=30, 
+     col=col.alpha("red",.6), 
+     freq=F, 
+     ylim=c(0,5), 
+     xlab="Propensity Score", 
+     ylab="",
+     main="Propensity Score Distribution: Treatment vs Control")
+
+hist((Guns$pscore[Guns$law=='no']),
+     breaks=30,
+     col=col.alpha("lightblue",.6), 
+     freq=F, ylim=c(0,5), 
+     xlab="Propensity Score", 
+     ylab="",
+     main="",
+     add=T)
+
+legend(.4,5, 
+       legend=c("Law: Yes", "Law: No"),
+       col=c("red", "blue"),
+       fill = c("red", "lightblue") )
+```
+
+## Balancing
+
+- In an ideal situation, the addition of weights will remove the imbalances between the factor: law and our other covariates
+
+- A more experienced statistician would seek out alternative propensity methods to ensure balance is met for all covariates
+
+## Balancing: UnWeighted
+- Significant imbalance between law and all other covariates
+
+```{r prebalance, echo=FALSE, results='asis'}
+
+
+
+bal1= lm(male~law, Guns)
+kpre1=kable(summary(bal1)[4],
+            caption = "lm(male ~ law)")
+
+
+
+bal2= lm(robbery~law, Guns)
+kpre2=kable(summary(bal2)[4],
+            caption = "lm(robbery ~ law)")
+
+
+bal3= lm(murder~law, Guns)
+kpre3=kable(summary(bal3)[4],
+            caption = "lm(murder ~ law)")
+
+
+bal4= lm(density~law, Guns)
+kpre4=kable(summary(bal4)[4],
+            caption = "lm(density ~ law)")
+
+bal_pre = list(kpre1,kpre2, kpre3, kpre4)
+bal_pre
+```
+
+
+
+## Balancing: Weighted
+
+- The addition of weights did not provide perfect balance.
+
+- Balance Achieved: Male
+
+- Significant Imbalance Improved: Murder
+
+- Insignificant Improvement: Robbery, Density
+
+```{r postbalance, echo=FALSE, results='asis'}
+
+
+
+bal1= lm(male~law, Guns, weights=weight)
+kpost1=kable(summary(bal1)[5],
+            caption = "lm(male ~ law)")
+
+
+
+bal2= lm(robbery~law, Guns, weights=weight)
+kpost2=kable(summary(bal2)[5],
+            caption = "lm(robbery ~ law)")
+
+
+bal3= lm(murder~law, Guns, weights=weight)
+kpost3=kable(summary(bal3)[5],
+            caption = "lm(murder ~ law)")
+
+
+bal4= lm(density~law, Guns, weights=weight)
+kpost4=kable(summary(bal4)[5],
+            caption = "lm(density ~ law)")
+
+bal_post = list(kpost1,kpost2, kpost3, kpost4)
+bal_post
+
+```
+
+
+
+## Unweighted Linear Mixed Model
+
+From the unweighted model:
+  
+  - the intercept, prisoners, robbery, and male were all significantly (p<0.001)and positively related with log(violent)
+  
+  - law = 'yes' was significantly (level: 0.05) and negatively correlated with log(violent)
+  
+  - density and murder were not significant 
+  
+  ```{r Unweighted LMM}
+#before weights
+mod_pre = lmer(log(violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns) 
+summary(mod_pre)
+```
+
+
+## Final Weighted Linear Mixed Model
+From the weighted model:
+  
+  - the intercept, prisoners, robbery, and male were all significantly (p<0.001)and positively related with log(violent)
+  
+  - law = 'yes' was significantly (level: 0.1) and negatively correlated with log(violent). The effect of law was found to be less significant with the addition of weights. This indicates some bias was effectively removed from the model
+  
+  - density and murder were not significant 
+
+
+```{r weighted LMM, echo=FALSE}
+mod_post = lmer(log(violent)~law+male+robbery+murder+prisoners+density+(1|state)+(1|year), data=Guns, weights=weight)
+
+summary(mod_post)
+
+sm=summary(mod_post)
+
+```
+
+
+
+# Sensitivity Analysis
+
+## Homogenity of Variance
+
+
+```{r Diagnostics, echo=FALSE}
+plot_redres(mod_post, type = "std_cond")
+  
+```
+
+## Normality Assumption
+
+```{r echo=FALSE}
+
+plot_resqq(mod_post)
+hist(sm$residuals, breaks=30, main="Residuals Distribution", xlab="Residuals")
+
+
+
+```
+
+## Random Effects
+
+```{r echo=FALSE}
+plot_ranef(mod_post)
+```
+
+## Multicolinearity 
+
+```{r}
+vif(mod_post)
+```
+
+
+
+
+# Conclusion
+
+## Casual Inference?
+
+- While imbalance was reduced by weighting the model, selection bias is still present. 
+
+- We can NOT infer a causal relationship between law and violent crime rates
+
+Future methods to try: Stratifying, Propensity Matching, Spline Adjustment etc. etc. 
+
+## Other Results and Interpretations
+
+- the intercept, prisoners, robbery, and male were all significantly (p<0.001)and positively related with log(violent)
+  
+  - law = 'yes' was significantly (level: 0.1) and negatively correlated with log(violent). The effect of law was found to be less significant with the addition of weights. This indicates some bias was effectively removed from the model
+  
+  - density and murder were not significant 
+
+# End
